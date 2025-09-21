@@ -16,14 +16,14 @@ const App = () => {
   useEffect(() => {
     // Scene, camera, and renderer setup
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xffffff);
+    scene.background = new THREE.Color(0x000000);
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     const renderer = new THREE.WebGLRenderer({ antialias: true });
 
     renderer.setSize(window.innerWidth, window.innerHeight);
     mountRef.current.appendChild(renderer.domElement);
-    // Adjusted camera position for a better view of the entire grid
-    camera.position.set(70, 70, 70);
+    // Adjusted camera position to be further away
+    camera.position.set(200, 150, 200);
 
     // Controls
     const controls = new OrbitControls(camera, renderer.domElement);
@@ -31,15 +31,15 @@ const App = () => {
 
     // Line material for wireframe parts
     const wireframeMaterial = new LineMaterial({
-        color: 0x000000,
+        color: 0xffffff,
         linewidth: 2,
         resolution: new THREE.Vector2(window.innerWidth, window.innerHeight)
     });
 
     // Materials for colored parts
-    const baseMaterial = new THREE.MeshBasicMaterial({ color: 0x654321 }); // Dark brown
-    const pillarMaterial = new THREE.MeshBasicMaterial({ color: 0x78281F }); // Redder brown
-    const roofMaterial = new THREE.MeshBasicMaterial({ color: 0x8B4513 }); // Saddle brown / wood color
+    const baseMaterial = new THREE.MeshBasicMaterial({ color: 0x654321 });
+    const pillarMaterial = new THREE.MeshBasicMaterial({ color: 0x78281F });
+    const roofMaterial = new THREE.MeshBasicMaterial({ color: 0x8B4513 });
 
     // Function to create a single structure with a variable number of stories
     const createSingleStructure = (numStories) => {
@@ -83,7 +83,7 @@ const App = () => {
       group.add(base);
 
       const levelSpacing = 12;
-      const pillarHeight = 1 + (numStories * levelSpacing) + 1; // 1 for base, 1 for top plate
+      const pillarHeight = 1 + (numStories * levelSpacing) + 1;
       
       // Create solid circular pillars
       const pillarPositions = [
@@ -129,15 +129,11 @@ const App = () => {
       for (let i = 0; i < 3; i++) {
         for (let j = 0; j < 3; j++) {
           let numStories = 3;
-          // Central structure (i=1, j=1) is 4 stories
           if (i === 1 && j === 1) {
             numStories = 4;
-          } 
-          // Corner structures (i=0,j=0; i=0,j=2; i=2,j=0; i=2,j=2) are 2 stories
-          else if ((i === 0 && j === 0) || (i === 0 && j === 2) || (i === 2 && j === 0) || (i === 2 && j === 2)) {
+          } else if ((i === 0 && j === 0) || (i === 0 && j === 2) || (i === 2 && j === 0) || (i === 2 && j === 2)) {
             numStories = 2;
           }
-          // The rest are 3 stories by default
           
           const structure = createSingleStructure(numStories);
           structure.position.x = (i - 1) * spacing;
@@ -148,7 +144,28 @@ const App = () => {
       return gridGroup;
     };
 
-    scene.add(createGrid());
+    // Create a mega grid of 3 identical grids stacked vertically
+    const createMegaGrid = () => {
+        const megaGridGroup = new THREE.Group();
+        const spacing = 120;
+        const layerSpacing = 60;
+        const numGrids = 3;
+
+        for (let k = 0; k < numGrids; k++) {
+            for (let i = 0; i < numGrids; i++) {
+                for (let j = 0; j < numGrids; j++) {
+                    const subGrid = createGrid();
+                    subGrid.position.x = (i - 1) * spacing;
+                    subGrid.position.z = (j - 1) * spacing;
+                    subGrid.position.y = k * layerSpacing;
+                    megaGridGroup.add(subGrid);
+                }
+            }
+        }
+        return megaGridGroup;
+    };
+
+    scene.add(createMegaGrid());
 
     // Animation loop
     const animate = () => {
@@ -177,9 +194,9 @@ const App = () => {
   }, []);
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen bg-white text-neutral-900 p-4">
-      <h1 className="text-3xl font-bold mb-4">Four-Story Wireframe Structure</h1>
-      <p className="text-sm text-neutral-600 mb-6">Use your mouse to drag and rotate the model!</p>
+    <div className="flex flex-col items-center justify-center h-screen bg-black text-neutral-50 p-4">
+      <h1 className="text-3xl font-bold mb-4">A City of Structures</h1>
+      <p className="text-sm text-neutral-300 mb-6">Use your mouse to drag and rotate the model!</p>
       <div 
         ref={mountRef} 
         className="w-full h-full rounded-lg" 
