@@ -5,76 +5,56 @@ const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
-// Set a background color for a better contrast, easier to see if objects are rendered
-scene.background = new THREE.Color(0x333333);
+// Set the scene background to black
+scene.background = new THREE.Color(0x000000);
 
-// --- Materials for the layered, glowing house ---
-const warmModuleMaterial = new THREE.MeshStandardMaterial({
-    color: 0x8B4513,
-    emissive: 0xEE6600,
-    emissiveIntensity: 0.8,
-});
+// Set camera position
+camera.position.set(20, 20, 20);
+camera.lookAt(0, 0, 0);
 
-const coolModuleMaterial = new THREE.MeshStandardMaterial({
-    color: 0x36454F,
-    emissive: 0x00BFFF,
-    emissiveIntensity: 0.6,
-});
+// Add controls to move the camera with the mouse
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
 
-const structureMaterial = new THREE.MeshStandardMaterial({
-    color: 0x332211,
-});
+// --- Parameters for the grid ---
+const gridSize = 20; // Number of boxes along one side of the grid
+const boxSpacing = 1.2; // Spacing between boxes
 
-// --- Create House Modules and Structure ---
-const houseGroup = new THREE.Group();
+// Use a simple material that doesn't require lighting
+const boxMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true });
 
-const module1_geo = new THREE.BoxGeometry(3, 1, 3);
-const module1 = new THREE.Mesh(module1_geo, warmModuleMaterial);
-module1.position.set(0, 3.5, 0);
-houseGroup.add(module1);
-
-const module2_geo = new THREE.BoxGeometry(2.8, 1.5, 2.8);
-const module2 = new THREE.Mesh(module2_geo, warmModuleMaterial);
-module2.position.set(0, 2, 0);
-houseGroup.add(module2);
-
-const module3_geo = new THREE.BoxGeometry(2.5, 1.2, 2.5);
-const module3 = new THREE.Mesh(module3_geo, coolModuleMaterial);
-module3.position.set(0.5, 0.5, 0.5);
-houseGroup.add(module3);
-
-const module4_geo = new THREE.BoxGeometry(2.2, 1, 2.2);
-const module4 = new THREE.Mesh(module4_geo, coolModuleMaterial);
-module4.position.set(-0.5, -0.8, -0.5);
-houseGroup.add(module4);
-
-scene.add(houseGroup);
-
-// --- Add Lights ---
-// Ambient light to ensure all parts of the scene are at least partially illuminated
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-scene.add(ambientLight);
-
-// A HemisphereLight provides a nice gradient from sky to ground
-const hemisphereLight = new THREE.HemisphereLight(0xffffff, 0x000000, 0.6);
-scene.add(hemisphereLight);
-
-// Directional light for shadows and highlights
-const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-directionalLight.position.set(5, 10, 5).normalize();
-scene.add(directionalLight);
-
-// --- Position Camera ---
-camera.position.z = 10;
-camera.position.y = 2;
-camera.lookAt(new THREE.Vector3(0, 0, 0));
+// Loop to create the grid of boxes
+for (let x = -gridSize / 2; x < gridSize / 2; x++) {
+    for (let z = -gridSize / 2; z < gridSize / 2; z++) {
+        // Calculate the distance from the center of the grid (0, 0, 0)
+        const distance = Math.sqrt(x * x + z * z);
+        
+        // Use a mathematical function to determine the height based on distance
+        // This creates the "wave" effect.
+        const maxHeight = 10;
+        const height = maxHeight * Math.cos(distance * 0.4) + maxHeight * 0.5;
+        
+        // Create the box geometry and mesh
+        const boxGeometry = new THREE.BoxGeometry(1, height, 1);
+        const box = new THREE.Mesh(boxGeometry, boxMaterial);
+        
+        // Position the box
+        box.position.x = x * boxSpacing;
+        box.position.z = z * boxSpacing;
+        box.position.y = height / 2; // Position the box so it sits on the ground
+        
+        // Add the box to the scene
+        scene.add(box);
+    }
+}
 
 // --- Animation Loop ---
 function animate() {
     requestAnimationFrame(animate);
 
-    houseGroup.rotation.y += 0.005;
-
+    // Update the camera controls
+    controls.update();
+    
+    // Render the scene
     renderer.render(scene, camera);
 }
 animate();
