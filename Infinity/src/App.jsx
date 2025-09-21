@@ -24,7 +24,7 @@ const App = () => {
       mountRef.current.appendChild(renderer.domElement);
     }
 
-    camera.position.set(0, 40, 110); // Adjusted camera for the 3x3 grid
+    camera.position.set(0, 120, 250); // Adjusted camera to view all three grids
 
     // --- Controls ---
     const controls = new OrbitControls(camera, renderer.domElement);
@@ -40,14 +40,22 @@ const App = () => {
     scene.add(directionalLight);
 
     // --- Materials ---
-    const wireframeMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true, transparent: true, opacity: 0.8 });
+    // Changed material color to burnt sienna
+    const wireframeMaterial = new THREE.MeshBasicMaterial({ color: 0xe97451, wireframe: true, transparent: true, opacity: 0.8 });
     
-    // Line material for the connecting wires
+    // Changed line color to burnt sienna
     const lineMaterial = new LineMaterial({
-      color: 0xffffff,
+      color: 0xe97451,
       linewidth: 0.001,
       resolution: new THREE.Vector2(window.innerWidth, window.innerHeight)
     });
+    
+    // New material for the roof with a hard yellow color
+    const roofMaterial = new THREE.MeshBasicMaterial({ color: 0xFFFF00, wireframe: true, transparent: true, opacity: 0.8 });
+    
+    // New material for the pillars with a darker shade
+    const pillarMaterial = new THREE.MeshBasicMaterial({ color: 0x8a3d34, wireframe: true, transparent: true, opacity: 0.8 });
+
 
     // --- Structure Parameters ---
     const gridSize = 25;
@@ -66,7 +74,7 @@ const App = () => {
 
       // Create the floor
       const floorGeometry = new THREE.BoxGeometry(totalWidth, 0.5, totalWidth);
-      const floorMesh = new THREE.Mesh(floorGeometry, wireframeMaterial);
+      const floorMesh = new THREE.Mesh(floorGeometry, pillarMaterial);
       floorMesh.position.y = maxRodHeight / 2;
       levelGroup.add(floorMesh);
 
@@ -114,7 +122,7 @@ const App = () => {
         const r1 = radii[i];
         
         const pillarGeometry = new THREE.CylinderGeometry(r1, r1, h1, 8);
-        const pillar = new THREE.Mesh(pillarGeometry, wireframeMaterial);
+        const pillar = new THREE.Mesh(pillarGeometry, pillarMaterial);
         pillar.position.set(p1.x, h1 / 2, p1.z);
         pillarsGroup.add(pillar);
       }
@@ -128,7 +136,7 @@ const App = () => {
       const radialSegments = 64; 
       const heightSegments = 32;
       const roofGeometry = new THREE.ConeGeometry(roofRadius, roofHeight, radialSegments, heightSegments);
-      const roof = new THREE.Mesh(roofGeometry, wireframeMaterial);
+      const roof = new THREE.Mesh(roofGeometry, roofMaterial);
       const roofYPosition = levelSpacing * numLevels + maxRodHeight + 10;
       roof.position.y = roofYPosition - levelSpacing + 5; // Adjusted to sit on top of the last floor
       return roof;
@@ -153,50 +161,72 @@ const App = () => {
     };
 
     // --- Build the 3x3 grid of structures ---
-    // Left, Middle, Right row
-    const building1 = createBuilding(3);
-    building1.position.x = -40;
-    scene.add(building1);
+    const createBuildingGrid = (yOffset) => {
+      const gridGroup = new THREE.Group();
+      gridGroup.position.y = yOffset;
+      
+      const building1 = createBuilding(3);
+      building1.position.x = -40;
+      gridGroup.add(building1);
 
-    const building2 = createBuilding(4); // Remains at 4 stories
-    building2.position.x = 0;
-    scene.add(building2);
+      const building2 = createBuilding(4); // Remains at 4 stories
+      building2.position.x = 0;
+      gridGroup.add(building2);
 
-    const building3 = createBuilding(3);
-    building3.position.x = 40;
-    scene.add(building3);
+      const building3 = createBuilding(3);
+      building3.position.x = 40;
+      gridGroup.add(building3);
 
-    // Front row
-    const building4 = createBuilding(3);
-    building4.position.x = -40;
-    building4.position.z = -40;
-    scene.add(building4);
+      const building4 = createBuilding(2); // Decreased to 2 stories
+      building4.position.x = -40;
+      building4.position.z = -40;
+      gridGroup.add(building4);
 
-    const building5 = createBuilding(3);
-    building5.position.x = 0;
-    building5.position.z = -40;
-    scene.add(building5);
+      const building5 = createBuilding(3);
+      building5.position.x = 0;
+      building5.position.z = -40;
+      gridGroup.add(building5);
 
-    const building6 = createBuilding(3);
-    building6.position.x = 40;
-    building6.position.z = -40;
-    scene.add(building6);
+      const building6 = createBuilding(2); // Decreased to 2 stories
+      building6.position.x = 40;
+      building6.position.z = -40;
+      gridGroup.add(building6);
+      
+      const building7 = createBuilding(2); // Decreased to 2 stories
+      building7.position.x = -40;
+      building7.position.z = 40;
+      gridGroup.add(building7);
+      
+      const building8 = createBuilding(3);
+      building8.position.x = 0;
+      building8.position.z = 40;
+      gridGroup.add(building8);
+
+      const building9 = createBuilding(2); // Decreased to 2 stories
+      building9.position.x = 40;
+      building9.position.z = 40;
+      gridGroup.add(building9);
+
+      return gridGroup;
+    };
+
+    // Function to create an inverted building grid
+    const createInvertedBuildingGrid = (yOffset) => {
+      const gridGroup = createBuildingGrid(0);
+      gridGroup.position.y = yOffset;
+      gridGroup.scale.y = -1; // Invert the Y scale
+      return gridGroup;
+    };
     
-    // Back row
-    const building7 = createBuilding(3);
-    building7.position.x = -40;
-    building7.position.z = 40;
-    scene.add(building7);
-    
-    const building8 = createBuilding(3);
-    building8.position.x = 0;
-    building8.position.z = 40;
-    scene.add(building8);
+    // Create the three grids
+    const grid1 = createBuildingGrid(0);
+    scene.add(grid1);
 
-    const building9 = createBuilding(3);
-    building9.position.x = 40;
-    building9.position.z = 40;
-    scene.add(building9);
+    const grid2 = createInvertedBuildingGrid(165);
+    scene.add(grid2);
+    
+    const grid3 = createBuildingGrid(220);
+    scene.add(grid3);
 
     // --- Animation Loop ---
     const animate = () => {
