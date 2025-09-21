@@ -195,7 +195,7 @@ const App = () => {
 
   return (
     <div className="flex flex-col items-center justify-center h-screen bg-black text-neutral-50 p-4">
-      <h1 className="text-3xl font-bold mb-4">A City of Structures</h1>
+      <h1 className="text-3xl font-bold mb-4">Infinity Castle</h1>
       <p className="text-sm text-neutral-300 mb-6">Use your mouse to drag and rotate the model!</p>
       <div 
         ref={mountRef} 
