@@ -64,7 +64,7 @@ scene.add(directionalLight);
 
 // Add point lights for more depth
 const pointLights = [];
-for (let i = 0; i < 15; i++) {
+for (let i = 0; i < 30; i++) {
     const light = new THREE.PointLight(worlds[0].color, 1, 50);
     light.position.set(
         (Math.random() - 0.5) * 20,
@@ -74,6 +74,60 @@ for (let i = 0; i < 15; i++) {
     scene.add(light);
     pointLights.push(light);
 }
+
+// --- NEW CODE: Function to create a single house structure ---
+function createHouse() {
+    // Create Colorful Materials
+    const bodyMaterial = new THREE.MeshStandardMaterial({ color: 0xff4500 });
+    const roofMaterial = new THREE.MeshStandardMaterial({ color: 0x228b22 });
+    const doorMaterial = new THREE.MeshStandardMaterial({ color: 0x8b4513 });
+    const windowMaterial = new THREE.MeshStandardMaterial({ color: 0x87ceeb });
+    const chimneyMaterial = new THREE.MeshStandardMaterial({ color: 0x808080 });
+
+    // Create House Geometries
+    const houseBodyGeometry = new THREE.BoxGeometry(2, 2, 2);
+    const roofGeometry = new THREE.ConeGeometry(1.5, 1, 4);
+    const doorGeometry = new THREE.BoxGeometry(0.5, 1, 0.1);
+    const windowGeometry = new THREE.BoxGeometry(0.5, 0.5, 0.1);
+    const chimneyGeometry = new THREE.BoxGeometry(0.4, 0.8, 0.4);
+
+    // Create Meshes and Position
+    const houseBody = new THREE.Mesh(houseBodyGeometry, bodyMaterial);
+    const roof = new THREE.Mesh(roofGeometry, roofMaterial);
+    const door = new THREE.Mesh(doorGeometry, doorMaterial);
+    const window1 = new THREE.Mesh(windowGeometry, windowMaterial);
+    const window2 = new THREE.Mesh(windowGeometry, windowMaterial);
+    const chimney = new THREE.Mesh(chimneyGeometry, chimneyMaterial);
+
+    // Position the parts
+    houseBody.position.y = 0;
+    roof.position.y = 1.5;
+    door.position.set(0, -0.5, 1.01);
+    window1.position.set(-0.5, 0.2, 1.01);
+    window2.position.set(0.5, 0.2, 1.01);
+    chimney.position.set(0.8, 1.9, -0.5);
+
+    // Group the House Parts
+    const houseGroup = new THREE.Group();
+    houseGroup.add(houseBody, roof, door, window1, window2, chimney);
+    return houseGroup;
+}
+
+// Create and place 25 houses randomly
+const houses = [];
+for (let i = 0; i < 25; i++) {
+    const newHouse = createHouse();
+    newHouse.position.set(
+        (Math.random() - 0.5) * 100,
+        (Math.random() - 0.5) * 100,
+        (Math.random() - 0.5) * 100
+    );
+    newHouse.rotation.y = Math.random() * Math.PI;
+    scene.add(newHouse);
+    houses.push(newHouse);
+}
+// --- END OF NEW CODE ---
+
 
 // Create a base structure for the castle
 function createCastleLayer(depth, scale, complexity, world) {
@@ -233,7 +287,7 @@ function createCastleLayer(depth, scale, complexity, world) {
 
 // Create multiple layers of the castle with increasing complexity
 const castleLayers = [];
-const totalLayers = 15;
+const totalLayers = 30;
 for (let i = 0; i < totalLayers; i++) {
     const layer = createCastleLayer(i, 1 + i * 0.2, 0.3 + i * 0.05, worlds[0]);
     scene.add(layer);
@@ -291,7 +345,7 @@ function createFloatingBridge(startPos, endPos) {
 }
 
 // Create some bridges between buildings
-for (let i = 0; i < 8; i++) {
+for (let i = 0; i < 16; i++) {
     const startBuilding = castleLayers[Math.floor(Math.random() * 10)].children[
         Math.floor(Math.random() * 25)
     ];
@@ -319,7 +373,7 @@ scene.fog = new THREE.FogExp2(0x000000, worlds[0].fogDensity);
 function createParticleSystem() {
     const particles = new THREE.Group();
     
-    for (let i = 0; i < 200; i++) {
+    for (let i = 0; i < 400; i++) {
         const geometry = new THREE.SphereGeometry(0.02, 8, 8);
         const material = new THREE.MeshBasicMaterial({
             color: worlds[0].particleColor,
@@ -379,7 +433,7 @@ createParticleSystem();
 // Add floating lanterns with more detail
 function addDecorativeElements() {
     // Add floating lanterns with glow
-    for (let i = 0; i < 30; i++) {
+    for (let i = 0; i < 60; i++) {
         const lanternGeometry = new THREE.BoxGeometry(0.3, 0.3, 0.3);
         const lanternMaterial = new THREE.MeshStandardMaterial({
             color: worlds[0].color,
@@ -429,9 +483,13 @@ window.addEventListener('scroll', () => {
     const currentScrollY = window.scrollY;
     scrollPosition = currentScrollY;
     
-    // Update camera position based on scroll
+    // Update camera position based on scroll to create a "falling" effect
     camera.position.z = 10 + scrollPosition * 0.01;
-    camera.position.y = scrollPosition * 0.005;
+    camera.position.y = -scrollPosition * 0.005; // Negative value to move down
+    
+    // Add a slight side-to-side and rotation effect to simulate exploration
+    camera.position.x = Math.sin(scrollPosition * 0.001) * 2;
+    camera.rotation.y = Math.sin(scrollPosition * 0.0005) * 0.05;
     
     // Check if we need to change worlds
     const sectionHeight = window.innerHeight;
@@ -440,30 +498,9 @@ window.addEventListener('scroll', () => {
     if (sectionIndex !== currentWorldIndex) {
         // Transition to new world
         currentWorldIndex = sectionIndex;
-        transitionToWorld(worlds[currentWorldIndex]);
-    }
-    
-    // Update layers positions
-    castleLayers.forEach((layer, index) => {
-        layer.position.y = index * 10 - scrollPosition * 0.1;
-        
-        // Add rotation effect based on depth
-        layer.rotation.x = scrollPosition * 0.0005 * (index / 10);
-        layer.rotation.y = scrollPosition * 0.0003 * (index / 10);
-        
-        // Add slight scaling effect
-        layer.scale.set(1 + scrollPosition * 0.0001 * (index / 10), 
-                        1 + scrollPosition * 0.0001 * (index / 10), 
-                        1 + scrollPosition * 0.0001 * (index / 10));
-    });
-    
-    // Animate camera movement
-    if (currentScrollY > lastScrollY) {
-        // Scrolling down
-        camera.position.y += scrollPosition * 0.001;
-    } else {
-        // Scrolling up
-        camera.position.y -= scrollPosition * 0.001;
+        if (worlds[currentWorldIndex]) {
+            transitionToWorld(worlds[currentWorldIndex]);
+        }
     }
     
     lastScrollY = currentScrollY;
@@ -550,11 +587,15 @@ function animate() {
         light.position.y = Math.cos(Date.now() * 0.001 + index) * 15;
         light.position.z = Math.sin(Date.now() * 0.001 + index * 2) * 15;
     });
+
+    // Animate each of the new houses
+    houses.forEach(house => {
+        house.rotation.y += 0.005;
+    });
     
     // Render
     renderer.render(scene, camera);
 }
-
 animate();
 
 // Add some visual effects when scrolling

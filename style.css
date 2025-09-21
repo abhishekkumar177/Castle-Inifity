@@ -50,7 +50,7 @@ p {
     bottom: 20px;
     left: 50%;
     transform: translateX(-50%);
-    color: #ea2d07;
+    color: #ff8c00; /* Updated for golden color theme */
     font-size: 1.5rem;
     animation: bounce 2s infinite;
 }
