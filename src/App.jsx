@@ -1,255 +1,175 @@
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js';
 import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js';
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js';
-import { LineGeometry } from 'three/examples/jsm/lines/LineGeometry.js';
 
-// Main React component for the 3D structure
+// Load Tailwind CSS from CDN for styling
+const tailwindScript = document.createElement('script');
+tailwindScript.src = "https://cdn.tailwindcss.com";
+document.head.appendChild(tailwindScript);
+
 const App = () => {
   const mountRef = useRef(null);
 
   useEffect(() => {
-    // --- Scene Setup ---
+    // Scene, camera, and renderer setup
     const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xffffff);
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     const renderer = new THREE.WebGLRenderer({ antialias: true });
-    
-    // Set up renderer to fit the window and append to the DOM
+
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(window.devicePixelRatio);
-    renderer.setClearColor(0x000000); // Set background to black
-    
-    if (mountRef.current) {
-      mountRef.current.appendChild(renderer.domElement);
-    }
+    mountRef.current.appendChild(renderer.domElement);
+    // Adjusted camera position for a better view of the entire grid
+    camera.position.set(70, 70, 70);
 
-    camera.position.set(0, 120, 250); // Adjusted camera to view all three grids
-
-    // --- Controls ---
+    // Controls
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
-    controls.dampingFactor = 0.05;
-    controls.screenSpacePanning = false;
 
-    // --- Lighting ---
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-    scene.add(ambientLight);
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-    directionalLight.position.set(5, 10, 7.5);
-    scene.add(directionalLight);
-
-    // --- Materials ---
-    // Changed material color to burnt sienna
-    const wireframeMaterial = new THREE.MeshBasicMaterial({ color: 0xe97451, wireframe: true, transparent: true, opacity: 0.8 });
-    
-    // Changed line color to burnt sienna
-    const lineMaterial = new LineMaterial({
-      color: 0xe97451,
-      linewidth: 0.001,
-      resolution: new THREE.Vector2(window.innerWidth, window.innerHeight)
+    // Line material for wireframe parts
+    const wireframeMaterial = new LineMaterial({
+        color: 0x000000,
+        linewidth: 2,
+        resolution: new THREE.Vector2(window.innerWidth, window.innerHeight)
     });
-    
-    // New material for the roof with a hard yellow color
-    const roofMaterial = new THREE.MeshBasicMaterial({ color: 0xFFFF00, wireframe: true, transparent: true, opacity: 0.8 });
-    
-    // New material for the pillars with a darker shade
-    const pillarMaterial = new THREE.MeshBasicMaterial({ color: 0x8a3d34, wireframe: true, transparent: true, opacity: 0.8 });
 
+    // Materials for colored parts
+    const baseMaterial = new THREE.MeshBasicMaterial({ color: 0x654321 }); // Dark brown
+    const pillarMaterial = new THREE.MeshBasicMaterial({ color: 0x78281F }); // Redder brown
+    const roofMaterial = new THREE.MeshBasicMaterial({ color: 0x8B4513 }); // Saddle brown / wood color
 
-    // --- Structure Parameters ---
-    const gridSize = 25;
-    const spacing = 1.2;
-    const maxRodHeight = 8;
-    const levelSpacing = 16;
-    const rodRadius = 0.5;
+    // Function to create a single structure with a variable number of stories
+    const createSingleStructure = (numStories) => {
+      const group = new THREE.Group();
+      const points = [];
+      const numSegments = 32;
 
-    // Function to create a single level of the structure
-    const createLevel = (yPosition) => {
-      const levelGroup = new THREE.Group();
-      levelGroup.position.y = yPosition;
+      // Helper function to create a rectangular prism wireframe
+      const createBoxWireframe = (width, height, depth, yOffset) => {
+          const w = width / 2;
+          const h = height / 2;
+          const d = depth / 2;
+          const y = yOffset + h;
 
-      const halfSize = gridSize / 2;
-      const totalWidth = spacing * gridSize;
+          // Vertices
+          const vertices = [
+              // Bottom rectangle
+              -w, y - h, -d,  w, y - h, -d,
+               w, y - h, -d,  w, y - h,  d,
+               w, y - h,  d, -w, y - h,  d,
+              -w, y - h,  d, -w, y - h, -d,
 
-      // Create the floor
-      const floorGeometry = new THREE.BoxGeometry(totalWidth, 0.5, totalWidth);
-      const floorMesh = new THREE.Mesh(floorGeometry, pillarMaterial);
-      floorMesh.position.y = maxRodHeight / 2;
-      levelGroup.add(floorMesh);
+              // Top rectangle
+              -w, y + h, -d,  w, y + h, -d,
+               w, y + h, -d,  w, y + h,  d,
+               w, y + h,  d, -w, y + h,  d,
+              -w, y + h,  d, -w, y + h, -d,
 
-      for (let i = 0; i < gridSize; i++) {
-        for (let j = 0; j < gridSize; j++) {
-          const x_raw = (i - halfSize) * spacing;
-          const z_raw = (j - halfSize) * spacing;
-          
-          const curveFactor = 1.0;
-          const distToEdgeX = Math.min(Math.abs(i), Math.abs(gridSize - 1 - i));
-          const distToEdgeZ = Math.min(Math.abs(j), Math.abs(gridSize - 1 - j));
-          
-          const x = x_raw + curveFactor * Math.cos((j / (gridSize - 1) - 0.5) * Math.PI) * (distToEdgeX < 3 ? 1 : 0);
-          const z = z_raw + curveFactor * Math.cos((i / (gridSize - 1) - 0.5) * Math.PI) * (distToEdgeZ < 3 ? 1 : 0);
-          
-          const rodGeometry = new THREE.CylinderGeometry(rodRadius, rodRadius, maxRodHeight, 8);
-          const rod = new THREE.Mesh(rodGeometry, wireframeMaterial);
-          rod.position.set(x, maxRodHeight / 2, z);
-          
-          levelGroup.add(rod);
-        }
-      }
-      return levelGroup;
-    };
+              // Vertical lines
+              -w, y - h, -d, -w, y + h, -d,
+               w, y - h, -d,  w, y + h, -d,
+               w, y - h,  d,  w, y + h,  d,
+              -w, y - h,  d, -w, y + h,  d,
+          ];
+          points.push(...vertices);
+      };
 
-    // Function to create the continuous central and corner pillars
-    const createPillars = (numLevels) => {
-      const pillarsGroup = new THREE.Group();
-      const positions = [
-        new THREE.Vector3(0, 0, 0),
-        new THREE.Vector3(gridSize * spacing / 2, 0, gridSize * spacing / 2),
-        new THREE.Vector3(-gridSize * spacing / 2, 0, gridSize * spacing / 2),
-        new THREE.Vector3(gridSize * spacing / 2, 0, -gridSize * spacing / 2),
-        new THREE.Vector3(-gridSize * spacing / 2, 0, -gridSize * spacing / 2),
+      // Create colored base (solid)
+      const base = new THREE.Mesh(new THREE.BoxGeometry(25, 2, 25), baseMaterial);
+      base.position.y = 1;
+      group.add(base);
+
+      const levelSpacing = 12;
+      const pillarHeight = 1 + (numStories * levelSpacing) + 1; // 1 for base, 1 for top plate
+      
+      // Create solid circular pillars
+      const pillarPositions = [
+        new THREE.Vector3(-10, 1, -10), new THREE.Vector3(10, 1, -10),
+        new THREE.Vector3(-10, 1, 10), new THREE.Vector3(10, 1, 10),
       ];
       
-      const cornerPillarHeight = levelSpacing * numLevels + 0.5;
-      const centralPillarHeight = cornerPillarHeight + 10;
-      const heights = [centralPillarHeight, cornerPillarHeight, cornerPillarHeight, cornerPillarHeight, cornerPillarHeight];
-      const radii = [1.5, 1, 1, 1, 1];
-      
-      for(let i = 0; i < positions.length; i++) {
-        const p1 = positions[i];
-        const h1 = heights[i];
-        const r1 = radii[i];
-        
-        const pillarGeometry = new THREE.CylinderGeometry(r1, r1, h1, 8);
-        const pillar = new THREE.Mesh(pillarGeometry, pillarMaterial);
-        pillar.position.set(p1.x, h1 / 2, p1.z);
-        pillarsGroup.add(pillar);
-      }
-      return pillarsGroup;
-    };
-    
-    // Function to create a conical hut roof
-    const createConicalRoof = (numLevels) => {
-      const roofHeight = 15;
-      const roofRadius = (gridSize * spacing) / 2 + 5;
-      const radialSegments = 64; 
-      const heightSegments = 32;
-      const roofGeometry = new THREE.ConeGeometry(roofRadius, roofHeight, radialSegments, heightSegments);
-      const roof = new THREE.Mesh(roofGeometry, roofMaterial);
-      const roofYPosition = levelSpacing * numLevels + maxRodHeight + 10;
-      roof.position.y = roofYPosition - levelSpacing + 5; // Adjusted to sit on top of the last floor
-      return roof;
-    };
+      pillarPositions.forEach(pos => {
+          const pillarGeometry = new THREE.CylinderGeometry(0.75, 0.75, pillarHeight, numSegments);
+          const pillar = new THREE.Mesh(pillarGeometry, pillarMaterial);
+          pillar.position.set(pos.x, 1 + pillarHeight / 2, pos.z);
+          group.add(pillar);
+      });
 
-    // Function to create a complete building
-    const createBuilding = (numLevels) => {
-      const buildingGroup = new THREE.Group();
-      
-      for (let i = 0; i < numLevels; i++) {
-        const level = createLevel(i * levelSpacing);
-        buildingGroup.add(level);
+      // Create separate floors as solid cubes
+      for (let i = 1; i <= numStories; i++) {
+        // Floor plate as a solid box
+        const floor = new THREE.Mesh(new THREE.BoxGeometry(20, 0.5, 20), baseMaterial);
+        floor.position.y = 1 + i * levelSpacing + 0.25;
+        group.add(floor);
       }
 
-      const pillars = createPillars(numLevels);
-      buildingGroup.add(pillars);
-      
-      const roof = createConicalRoof(numLevels);
-      buildingGroup.add(roof);
+      // Create top plate (wireframe)
+      createBoxWireframe(20, 0.5, 20, 1 + numStories * levelSpacing + 1);
 
-      return buildingGroup;
+      // Create colored roof (solid)
+      const roof = new THREE.Mesh(new THREE.BoxGeometry(30, 0.5, 30), roofMaterial);
+      roof.position.y = 1 + numStories * levelSpacing + 1.5;
+      group.add(roof);
+
+      // Add all wireframe parts to the group
+      const geometry = new LineSegmentsGeometry().setPositions(new Float32Array(points));
+      const line = new LineSegments2(geometry, wireframeMaterial);
+      group.add(line);
+
+      return group;
     };
 
-    // --- Build the 3x3 grid of structures ---
-    const createBuildingGrid = (yOffset) => {
+    // Create a grid of 9 structures with different heights
+    const createGrid = () => {
       const gridGroup = new THREE.Group();
-      gridGroup.position.y = yOffset;
-      
-      const building1 = createBuilding(3);
-      building1.position.x = -40;
-      gridGroup.add(building1);
-
-      const building2 = createBuilding(4); // Remains at 4 stories
-      building2.position.x = 0;
-      gridGroup.add(building2);
-
-      const building3 = createBuilding(3);
-      building3.position.x = 40;
-      gridGroup.add(building3);
-
-      const building4 = createBuilding(2); // Decreased to 2 stories
-      building4.position.x = -40;
-      building4.position.z = -40;
-      gridGroup.add(building4);
-
-      const building5 = createBuilding(3);
-      building5.position.x = 0;
-      building5.position.z = -40;
-      gridGroup.add(building5);
-
-      const building6 = createBuilding(2); // Decreased to 2 stories
-      building6.position.x = 40;
-      building6.position.z = -40;
-      gridGroup.add(building6);
-      
-      const building7 = createBuilding(2); // Decreased to 2 stories
-      building7.position.x = -40;
-      building7.position.z = 40;
-      gridGroup.add(building7);
-      
-      const building8 = createBuilding(3);
-      building8.position.x = 0;
-      building8.position.z = 40;
-      gridGroup.add(building8);
-
-      const building9 = createBuilding(2); // Decreased to 2 stories
-      building9.position.x = 40;
-      building9.position.z = 40;
-      gridGroup.add(building9);
-
+      const spacing = 35;
+      for (let i = 0; i < 3; i++) {
+        for (let j = 0; j < 3; j++) {
+          let numStories = 3;
+          // Central structure (i=1, j=1) is 4 stories
+          if (i === 1 && j === 1) {
+            numStories = 4;
+          } 
+          // Corner structures (i=0,j=0; i=0,j=2; i=2,j=0; i=2,j=2) are 2 stories
+          else if ((i === 0 && j === 0) || (i === 0 && j === 2) || (i === 2 && j === 0) || (i === 2 && j === 2)) {
+            numStories = 2;
+          }
+          // The rest are 3 stories by default
+          
+          const structure = createSingleStructure(numStories);
+          structure.position.x = (i - 1) * spacing;
+          structure.position.z = (j - 1) * spacing;
+          gridGroup.add(structure);
+        }
+      }
       return gridGroup;
     };
 
-    // Function to create an inverted building grid
-    const createInvertedBuildingGrid = (yOffset) => {
-      const gridGroup = createBuildingGrid(0);
-      gridGroup.position.y = yOffset;
-      gridGroup.scale.y = -1; // Invert the Y scale
-      return gridGroup;
-    };
-    
-    // Create the three grids
-    const grid1 = createBuildingGrid(0);
-    scene.add(grid1);
+    scene.add(createGrid());
 
-    const grid2 = createInvertedBuildingGrid(165);
-    scene.add(grid2);
-    
-    const grid3 = createBuildingGrid(220);
-    scene.add(grid3);
-
-    // --- Animation Loop ---
+    // Animation loop
     const animate = () => {
       requestAnimationFrame(animate);
       controls.update();
       renderer.render(scene, camera);
     };
 
-    // --- Handle Window Resizing ---
-    const onWindowResize = () => {
+    // Handle window resize
+    const onResize = () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
-      lineMaterial.resolution.set(window.innerWidth, window.innerHeight);
+      wireframeMaterial.resolution.set(window.innerWidth, window.innerHeight);
     };
 
-    window.addEventListener('resize', onWindowResize);
-
+    window.addEventListener('resize', onResize);
     animate();
 
-    // Clean up on component unmount
     return () => {
-      window.removeEventListener('resize', onWindowResize);
+      window.removeEventListener('resize', onResize);
       if (mountRef.current && renderer.domElement) {
         mountRef.current.removeChild(renderer.domElement);
       }
@@ -257,10 +177,12 @@ const App = () => {
   }, []);
 
   return (
-    <div className="flex justify-center items-center h-screen bg-black">
+    <div className="flex flex-col items-center justify-center h-screen bg-white text-neutral-900 p-4">
+      <h1 className="text-3xl font-bold mb-4">Four-Story Wireframe Structure</h1>
+      <p className="text-sm text-neutral-600 mb-6">Use your mouse to drag and rotate the model!</p>
       <div 
         ref={mountRef} 
-        className="w-full h-full" 
+        className="w-full h-full rounded-lg" 
       />
     </div>
   );
