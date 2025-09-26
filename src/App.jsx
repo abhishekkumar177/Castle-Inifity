@@ -93,31 +93,24 @@ function Scene() {
   const cameraRef = useRef();
   const controlsRef = useRef();
 
-  useFrame(() => {
-    if (controlsRef.current) {
-      controlsRef.current.update();
-    }
-  });
-
   return (
     <>
-      {/* Camera */}
+      {/* Camera: Moved closer to the center of the scene for better rotation feeling */}
       <perspectiveCamera
         ref={cameraRef}
-        position={[0, 3, 8]}
+        position={[0, 1.5, 3]}
         fov={70}
         near={0.1}
         far={50}
       />
 
-      {/* Orbit Controls (Subtle) */}
+      {/* Orbit Controls: Set for pure 360-degree rotation (no zoom, no pan, no limits) */}
       <OrbitControls
         ref={controlsRef}
-        enableZoom={false}
-        enablePan={false}
-        autoRotate={true}
-        autoRotateSpeed={0.1}
-        maxPolarAngle={Math.PI / 2}
+        enableZoom={false} // Disabled zoom
+        enablePan={false} // Disabled pan (user only rotates)
+        autoRotate={false}
+        target={[0, 1.5, 0]} // Set target to the center of the scene height
       />
 
       {/* Lighting */}
@@ -167,9 +160,9 @@ function Scene() {
         );
       })}
 
-      {/* Ground Platform */}
-      <mesh position={[0, 0, -3]} rotation={[-Math.PI / 2, 0, 0]} castShadow receiveShadow>
-        <planeGeometry args={[10, 10]} />
+      {/* Ground Platform: Increased size significantly to cover more area */}
+      <mesh position={[0, 0, 0]} rotation={[-Math.PI / 2, 0, 0]} castShadow receiveShadow>
+        <planeGeometry args={[100, 100]} /> {/* Increased args to [100, 100] */}
         <meshStandardMaterial color="#111" roughness={0.9} metalness={0.1} />
       </mesh>
     </>
@@ -178,16 +171,7 @@ function Scene() {
 
 function App() {
   return (
-    <div style={{
-      width: '100%',
-      maxWidth: '600px',
-      height: '400px',
-      margin: '20px auto',
-      background: '#000',
-      borderRadius: '12px',
-      overflow: 'hidden',
-      boxShadow: '0 10px 30px rgba(0,0,0,0.5)'
-    }}>
+    <div style={{ width: '100vw', height: '100vh', background: '#000' }}>
       <Canvas shadows dpr={[1, 2]} style={{ width: '100%', height: '100%' }}>
         <Scene />
       </Canvas>
