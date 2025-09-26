@@ -95,13 +95,16 @@ function Scene() {
 
   return (
     <>
+      {/* Set a deep black background color for the canvas to cover all empty space */}
+      <color attach="background" args={['#000000']} />
+
       {/* Camera: Moved closer to the center of the scene for better rotation feeling */}
       <perspectiveCamera
         ref={cameraRef}
         position={[0, 1.5, 3]}
         fov={70}
         near={0.1}
-        far={50}
+        far={1000} // Increased far clipping plane to see distant objects
       />
 
       {/* Orbit Controls: Set for pure 360-degree rotation (no zoom, no pan, no limits) */}
@@ -140,29 +143,38 @@ function Scene() {
       <FogEffect />
 
       {/* Floating Particles */}
-      <FloatingParticles count={40} />
+      <FloatingParticles count={1000} /> {/* Increased particle count to match scale */}
 
       {/* Silhouette Figure */}
       <SilhouetteFigure position={[0, 1.5, -3]} />
 
-      {/* Towering Structures (Fewer & Smaller) */}
-      {[...Array(9)].map((_, i) => {
-        const x = (i % 3 - 1) * 2;
-        const z = Math.floor(i / 3) * 3 - 3;
-        const height = 1 + Math.random() * 4;
+      {/* Towering Structures: Now aligned parallel and perpendicular to the world axes */}
+      {[...Array(1000)].map((_, i) => {
+        // Randomize position in a large cubic space
+        const x = (Math.random() - 0.5) * 100;
+        const z = (Math.random() - 0.5) * 100;
+        const height = 1 + Math.random() * 20;
+
+        // Rotation is either parallel (0) or perpendicular (PI/2) on X and Z axes
+        const rotX = Math.random() > 0.5 ? Math.PI / 2 : 0;
+        const rotZ = Math.random() > 0.5 ? Math.PI / 2 : 0;
+
+        // Rotation around the Y-axis is constrained to multiples of PI/2
+        const rotY = Math.floor(Math.random() * 4) * (Math.PI / 2);
+
         return (
           <BookStack
             key={i}
             position={[x, height / 2, z]}
             scale={[0.8, height, 0.8]}
-            rotation={[0, Math.random() * 0.1, 0]}
+            rotation={[rotX, rotY, rotZ]}
           />
         );
       })}
 
-      {/* Ground Platform: Increased size significantly to cover more area */}
+      {/* Ground Platform: Increased size to cover a much larger area */}
       <mesh position={[0, 0, 0]} rotation={[-Math.PI / 2, 0, 0]} castShadow receiveShadow>
-        <planeGeometry args={[100, 100]} /> {/* Increased args to [100, 100] */}
+        <planeGeometry args={[2000, 2000]} />
         <meshStandardMaterial color="#111" roughness={0.9} metalness={0.1} />
       </mesh>
     </>
