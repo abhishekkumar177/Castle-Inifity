@@ -1,12 +1,12 @@
 import React from 'react';
-// import Castle1 from './components/Castle1.jsx';
-import Doma from './components/Doma.jsx';
+import Castle1 from './components/Castle1.jsx';
+// import Doma from './components/Doma.jsx';
 import './App.css';
 
 function App() {
   return (
     <div className="flex justify-center items-center h-screen bg-black">
-      <Doma />
+      <Castle1/>
     </div>
   );
 }
